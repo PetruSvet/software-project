@@ -17,30 +17,10 @@ function draw() {
     else if (gameState === "simulation") {
         drawSimulation();
     }
+    else if (gameState === "instructions") {
+        drawInstructions();
+    }
 }
-
-function drawMenu() {
-    background('#76aace');
-
-    fill(255);
-    textAlign(CENTER, CENTER);
-    textSize(50);
-    textFont("Averia Sans Libre");
-    text("Ocean Simulation", width / 2, height / 2 - 50);
-
-    textSize(25);
-    text("this", width/2, height/2 + 20);
-
-    // Start button
-    fill(255);
-    rectMode(CENTER);
-    rect(width / 2, height / 2 + 100, 200, 60, 10);
-
-    fill(0);
-    textSize(25);
-    text("Start", width / 2, height / 2 + 100);
-}
-
 
 function drawSimulation() {
     background('#f6f5f5ff');
@@ -75,18 +55,12 @@ function drawSimulation() {
 function mousePressed() {
 
     if (gameState === "menu") {
-
-        // Check if mouse is inside Start button
-        if (
-            mouseX > width / 2 - 100 &&
-            mouseX < width / 2 + 100 &&
-            mouseY > height / 2 + 20 &&
-            mouseY < height / 2 + 80
-        ) {
-            gameState = "simulation";
-        }
-
+        menuMousePressed();
     }
+    else if (gameState === "instructions") {
+        gameState = "menu";  // go back to menu
+    }
+
 }
 
 // keeps canvas full screen if window resizes
