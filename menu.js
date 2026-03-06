@@ -12,8 +12,26 @@ let instructionsButton = {
     h: 60
 };
 
+let bubbles = [];
+
 function drawMenu() {
-    background('#76aace');
+
+     background('#76aace'); 
+
+    if (random(1) < 0.05) {
+        bubbles.push(new Bubble());
+    }
+
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+
+        bubbles[i].update();
+        bubbles[i].display();
+
+        // remove bubbles when they leave the screen
+        if (bubbles[i].y < -50) {
+            bubbles.splice(i, 1);
+        }
+    }
 
     fill(255);
     textAlign(CENTER, CENTER);
@@ -72,6 +90,28 @@ function menuMousePressed() {
         mouseY < instructionsButton.y + instructionsButton.h / 2
     ) {
         gameState = "instructions";
+    }
+
+}
+
+class Bubble {
+    constructor() {
+        this.x = random(width);
+        this.y = height + random(50); // start below screen
+        this.size = random(10, 40);
+        this.speed = random(0.5, 2);
+    }
+
+    update() {
+        this.y -= this.speed;
+        this.x += sin(frameCount * 0.05) * 0.5;
+    }
+
+    display() {
+        noFill();
+        stroke(255, 180);
+        strokeWeight(2);
+        ellipse(this.x, this.y, this.size);
     }
 }
 
