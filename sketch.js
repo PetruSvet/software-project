@@ -3,6 +3,8 @@ let yPos = 0.0; // Perlin noise (controls animation over time)
 let gameState = "menu";
 let fishX, fishY;
 
+let fishBubbles = [];
+
 
 function setup() {
     canvasW = windowWidth;
@@ -36,12 +38,7 @@ function drawSimulation() {
 
     for (let x = 0; x <= width; x += 10) {
 
-        let y = map(
-            noise(xPos, yPos),
-            1, 10,   // FIXED noise range
-            height * 0.15,
-            height * 0.6
-        );
+        let y = map(noise(xPos, yPos),1, 10,height * 0.15,height * 0.6);
 
         vertex(x, y);
         xPos += 0.05;
@@ -58,6 +55,13 @@ function drawSimulation() {
     fishX = lerp(fishX, mouseX, 0.05);
     fishY = lerp(fishY, mouseY, 0.05);
 
+    // keep fish under the wave
+    let waveY = getWaveHeight(fishX);
+
+    if (fishY < waveY + 20) {
+        fishY = waveY + 20;
+    }
+
     // calculate angle to mouse
     let angle = atan2(mouseY - fishY, mouseX - fishX);
 
@@ -68,6 +72,17 @@ function drawSimulation() {
     drawFish();
 
     pop();
+
+    for (let i = fishBubbles.length - 1; i >= 0; i--) {
+
+        fishBubbles[i].update();
+        fishBubbles[i].display();
+
+        // remove menuBubbles when they leave the screen
+        if (fishBubbles[i].y < -50) {
+            fishBubbles.splice(i, 1);
+        }
+    }
 }
 
 function mousePressed() {
@@ -83,7 +98,7 @@ function mousePressed() {
 
 function drawFish() {
 
-  noFill();
+  fill('#f6f5f5ff')
   stroke(255);
 
   // body
@@ -109,4 +124,13 @@ function drawFish() {
 // keeps canvas full screen if window resizes
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+}
+
+function getWaveHeight(x) {
+
+    let xPos = map(x, 0, width, 0, width * 0.05);
+
+    let y = map( noise(xPos, yPos),0, 10,height * 0.15,height * 0.6);
+
+    return y;
 }

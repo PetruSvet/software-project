@@ -14,6 +14,28 @@ let instructionsButton = {
 
 let bubbles = [];
 
+class Bubble {
+    constructor() {
+        this.x = random(width);
+        this.y = height + random(50); // start below screen
+        this.size = random(10, 40);
+        this.speed = random(0.5, 2);
+    }
+
+    update() {
+        this.y -= this.speed;
+        this.x += sin(frameCount * 0.05) * 0.5;
+    }
+
+    display() {
+        noFill();
+        stroke(255, 180);
+        strokeWeight(2);
+        ellipse(this.x, this.y, this.size);
+    }
+}
+
+
 function drawMenu() {
 
      background('#76aace'); 
@@ -93,25 +115,3 @@ function menuMousePressed() {
     }
 
 }
-
-class Bubble {
-    constructor() {
-        this.x = random(width);
-        this.y = height + random(50); // start below screen
-        this.size = random(10, 40);
-        this.speed = random(0.5, 2);
-    }
-
-    update() {
-        this.y -= this.speed;
-        this.x += sin(frameCount * 0.05) * 0.5;
-    }
-
-    display() {
-        noFill();
-        stroke(255, 180);
-        strokeWeight(2);
-        ellipse(this.x, this.y, this.size);
-    }
-}
-
