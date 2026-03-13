@@ -2,8 +2,18 @@ let canvasW, canvasH;
 let yPos = 0.0; // Perlin noise (controls animation over time)
 let gameState = "menu";
 let fishX, fishY;
-
+let trashImages = [];
+let trash = [];
+let maxTrash = 10;
 let fishBubbles = [];
+
+function preload() {
+    trashImages.push(loadImage("images/bottle.png"));
+    trashImages.push(loadImage("images/can.png"));
+    trashImages.push(loadImage("images/sixpackrings.png"));
+    trashImages.push(loadImage("images/straw.png"));
+    trashImages.push(loadImage("images/trashbag.png"));
+}
 
 
 function setup() {
@@ -12,6 +22,7 @@ function setup() {
     createCanvas(canvasW, canvasH);
     fishX = width/2;
     fishY = height/2;
+    console.log(trashImages);
 }
 
 function draw() {
@@ -28,13 +39,21 @@ function draw() {
 }
 
 function drawSimulation() {
-    background('#f6f5f5ff');
 
+    background('#f6f5f5ff');
     fill('#76aace');
     noStroke();
     beginShape();
 
     let xPos = 0;
+
+if (trashImages.length > 0 && trash.length < maxTrash && random(1) < 0.01) {
+    trash.push(new Trash());
+}
+
+    if (random(1) < 0.02) {
+        fishBubbles.push(new Bubble());
+    }
 
     for (let x = 0; x <= width; x += 10) {
 
@@ -50,6 +69,17 @@ function drawSimulation() {
     vertex(0, height);
 
     endShape(CLOSE);
+
+    for (let i = trash.length - 1; i >= 0; i--) {
+
+        trash[i].update();
+        trash[i].display();
+
+        if (trash[i].x < -100 || trash[i].x > width + 100) {
+            trash.splice(i,1);
+        }
+
+    }
 
     // move fish toward mouse
     fishX = lerp(fishX, mouseX, 0.05);
@@ -78,8 +108,10 @@ function drawSimulation() {
         fishBubbles[i].update();
         fishBubbles[i].display();
 
-        // remove menuBubbles when they leave the screen
-        if (fishBubbles[i].y < -50) {
+        let waveY = getWaveHeight(fishBubbles[i].x);
+
+        // remove bubble when it reaches water surface
+        if (fishBubbles[i].y < waveY) {
             fishBubbles.splice(i, 1);
         }
     }
@@ -128,9 +160,71 @@ function windowResized() {
 
 function getWaveHeight(x) {
 
+    x = constrain(x, 0, width);
+
     let xPos = map(x, 0, width, 0, width * 0.05);
 
-    let y = map( noise(xPos, yPos),0, 10,height * 0.15,height * 0.6);
+    let y = map(noise(xPos, yPos), 1, 10, height * 0.15, height * 0.6);
 
     return y;
+}
+
+class Trash {
+
+    constructor() {
+
+        this.img = random(trashImages);
+
+        if (!this.img) {
+            this.img = trashImages[0];
+        }
+
+        this.size = random(40, 80);
+
+        this.side = random(["left","right"]);
+
+        if (this.side === "left") {
+            this.x = -50;
+            this.speed = random(0.5, 1.5);
+        } else {
+            this.x = width + 50;
+            this.speed = -random(0.5, 1.5);
+        }
+
+        this.y = random(height * 0.3, height * 0.8);
+
+        this.wobbleOffset = random(1000);
+
+        this.angle = random(TWO_PI);
+        this.rotationSpeed = random(-0.01,0.01);
+    }
+
+    update() {
+
+        this.x += this.speed;   
+
+        this.x = constrain(this.x, -100, width + 100);
+
+        this.y += sin(frameCount * 0.05 + this.wobbleOffset) * 0.5;
+
+        this.angle += this.rotationSpeed;
+
+        if (trash.length > 20) {
+            trash.splice(0,1);
+        }
+    }
+
+    display() {
+
+        push();
+
+        translate(this.x, this.y);
+        rotate(this.angle);
+
+        imageMode(CENTER);
+        image(this.img, 0, 0, this.size, this.size);
+
+        pop();
+    }
+
 }
