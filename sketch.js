@@ -6,13 +6,17 @@ let trashImages = [];
 let trash = [];
 let maxTrash = 10;
 let fishBubbles = [];
+let seabinImg;
+let seabinX;
 
 function preload() {
+    console.log("preload running");
     trashImages.push(loadImage("images/bottle.png"));
     trashImages.push(loadImage("images/can.png"));
     trashImages.push(loadImage("images/sixpackrings.png"));
     trashImages.push(loadImage("images/straw.png"));
     trashImages.push(loadImage("images/trashbag.png"));
+    seabinImg = loadImage("images/seabin.png");
 }
 
 
@@ -23,6 +27,8 @@ function setup() {
     fishX = width/2;
     fishY = height/2;
     console.log(trashImages);
+    console.log("images:", trashImages);
+    seabinX = width * 0.75; 
 }
 
 function draw() {
@@ -47,9 +53,9 @@ function drawSimulation() {
 
     let xPos = 0;
 
-if (trashImages.length > 0 && trash.length < maxTrash && random(1) < 0.01) {
-    trash.push(new Trash());
-}
+    if (trashImages.length > 0 && frameCount % 120 === 0) {
+        trash.push(new Trash());
+    }
 
     if (random(1) < 0.02) {
         fishBubbles.push(new Bubble());
@@ -72,18 +78,22 @@ if (trashImages.length > 0 && trash.length < maxTrash && random(1) < 0.01) {
 
     for (let i = trash.length - 1; i >= 0; i--) {
 
-        trash[i].update();
-        trash[i].display();
+        let t = trash[i];
 
-        if (trash[i].x < -100 || trash[i].x > width + 100) {
+        if (!t) continue;
+
+        t.update();
+        t.display();
+
+        if (t.x < -100 || t.x > width + 100) {
             trash.splice(i,1);
         }
 
     }
 
     // move fish toward mouse
-    fishX = lerp(fishX, mouseX, 0.05);
-    fishY = lerp(fishY, mouseY, 0.05);
+    fishX = lerp(fishX, mouseX, 0.01);
+    fishY = lerp(fishY, mouseY, 0.01);
 
     // keep fish under the wave
     let waveY = getWaveHeight(fishX);
@@ -115,6 +125,21 @@ if (trashImages.length > 0 && trash.length < maxTrash && random(1) < 0.01) {
             fishBubbles.splice(i, 1);
         }
     }
+
+            
+        if (seabinX > width + 60) {
+            seabinX = -50;
+        }
+
+        // get wave height at seabin position
+        let seabinY = getWaveHeight(seabinX) + sin(frameCount * 0.05) * 3;
+
+        // draw seabin floating
+        push();
+        imageMode(CENTER);
+        translate(seabinX, seabinY - 10); // slightly above the wave
+        image(seabinImg, 0, 0, 120, 120);
+        pop();
 }
 
 function mousePressed() {
@@ -209,9 +234,6 @@ class Trash {
 
         this.angle += this.rotationSpeed;
 
-        if (trash.length > 20) {
-            trash.splice(0,1);
-        }
     }
 
     display() {
