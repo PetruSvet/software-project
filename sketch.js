@@ -22,6 +22,19 @@ let seabinImg;
 let seabinX;
 let arrowImg;
 
+let seabinFact = "";
+let showFact = false;
+let factTimer = 0;
+let seabinCooldown = 0;
+
+let seabinFacts = [
+    "Seabins can collect up to 1.5kg of trash per day.",
+    "Seabins capture microplastics and oil.",
+    "A seabin works like an underwater vacuum cleaner.",
+    "Seabins help keep marinas and harbours clean.",
+    "A Seabin continuously filters floating debris from water."
+];
+
 
 function preload() {
     let files = ['bottle', 'can', 'sixpackrings', 'straw', 'trashbag'];
@@ -70,6 +83,10 @@ function drawSimulation() {
     updateAndDrawFish();
     updateAndDrawBubbles();
     updateAndDrawSeabin();
+    drawSpeechBubble();
+    if (seabinCooldown > 0) {
+        seabinCooldown--;
+    }
 }
 
 function drawWave() {
@@ -151,6 +168,15 @@ function updateAndDrawSeabin() {
     imageMode(CENTER);
     image(seabinImg, seabinX, seabinY - 0, 120, 120);
     pop();
+
+    let d = dist(fishX, fishY, seabinX, seabinY);
+
+    if (d < 80 && !showFact && seabinCooldown <= 0) {
+        seabinFact = random(seabinFacts);
+        showFact = true;
+        factTimer = 300;
+        seabinCooldown = 300; // delay before next fact
+    }
 }
 
 
@@ -252,3 +278,42 @@ class Trash {
         }
 
     }
+
+    function drawSpeechBubble() {
+
+        if (!showFact) return;
+
+        push();
+
+        let bubbleX = fishX + 60;
+        let bubbleY = fishY - 60;
+
+        // bubble
+        fill(255);
+        stroke('#76aaceff');
+        strokeWeight(2);
+        rect(bubbleX, bubbleY, 260, 90, 30);
+
+        // bubble tail
+        triangle(
+            fishX + 20, fishY - 10,
+            fishX + 40, fishY - 20,
+            bubbleX, bubbleY + 30
+        );
+
+        // text
+        noStroke();
+        fill('#76aaceff');
+        textSize(18);
+        textAlign(LEFT, TOP);
+        textWrap(WORD);
+        textFont("Averia Sans Libre");
+        text(seabinFact, bubbleX + 10, bubbleY - 20, 240);
+
+        pop();
+
+        factTimer--;
+        if (factTimer <= 0) {
+            showFact = false;
+        }
+    }   
