@@ -1,252 +1,254 @@
+let waveColour       = '#76aaceff';
+let backgroundColour         = '#f6f5f5';
+let trashFrame   = 120;    // frames between new trash spawns
+let bubbleSpawn    = 0.02;   // probability per frame
+let fishLerp        = 0.01;   // fish tracking speed
+let seabinSpeed     = 0.4;    // pixels per frame
+let waveTop         = 0.15;   // wave height range (fraction of canvas)
+let waveBot         = 0.60;
+
+
 let canvasW, canvasH;
-let yPos = 0.0; // Perlin noise (controls animation over time)
-let gameState = "menu";
+let noiseOffset = 0;
+let gameState   = 'menu';
+
 let fishX, fishY;
-let trashImages = [];
-let trash = [];
-let maxTrash = 10;
 let fishBubbles = [];
+
+let trashImages = [];
+let trash       = [];
+
 let seabinImg;
 let seabinX;
+let arrowImg;
+
 
 function preload() {
-    console.log("preload running");
-    trashImages.push(loadImage("images/bottle.png"));
-    trashImages.push(loadImage("images/can.png"));
-    trashImages.push(loadImage("images/sixpackrings.png"));
-    trashImages.push(loadImage("images/straw.png"));
-    trashImages.push(loadImage("images/trashbag.png"));
-    seabinImg = loadImage("images/seabin.png");
+    let files = ['bottle', 'can', 'sixpackrings', 'straw', 'trashbag'];
+    trashImages = files.map(name => loadImage(`images/${name}.png`));
+    seabinImg = loadImage('images/seabin.png');
+    arrowImg = loadImage('images/arrow.png');
 }
-
 
 function setup() {
     canvasW = windowWidth;
     canvasH = windowHeight;
     createCanvas(canvasW, canvasH);
-    fishX = width/2;
-    fishY = height/2;
-    console.log(trashImages);
-    console.log("images:", trashImages);
-    seabinX = width * 0.75; 
+
+    fishX  = width  / 2;
+    fishY  = height / 2;
+    seabinX = width * 0.75;
 }
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+
 
 function draw() {
 
-    if (gameState === "menu") {
+    if (gameState === 'menu') {
         drawMenu();
     } 
-    else if (gameState === "simulation") {
+    else if (gameState === 'simulation') {
         drawSimulation();
+        drawArrow();
     }
-    else if (gameState === "instructions") {
+    else if (gameState === 'instructions') {
         drawInstructions();
+        drawArrow();
     }
 }
 
-function drawSimulation() {
 
-    background('#f6f5f5ff');
-    fill('#76aace');
+function drawSimulation() {
+    background(backgroundColour);
+
+    drawWave();
+    spawnEntities();
+    updateAndDrawTrash();
+    updateAndDrawFish();
+    updateAndDrawBubbles();
+    updateAndDrawSeabin();
+}
+
+function drawWave() {
+    fill(waveColour);
     noStroke();
     beginShape();
 
-    let xPos = 0;
-
-    if (trashImages.length > 0 && frameCount % 120 === 0) {
-        trash.push(new Trash());
-    }
-
-    if (random(1) < 0.02) {
-        fishBubbles.push(new Bubble());
-    }
-
     for (let x = 0; x <= width; x += 10) {
-
-        let y = map(noise(xPos, yPos),1, 10,height * 0.15,height * 0.6);
-
+        let nx = map(x, 0, width, 0, width * 0.008);
+        let y  = map(noise(nx, noiseOffset), 1, 10, height * waveTop, height * waveBot);
         vertex(x, y);
-        xPos += 0.05;
     }
-
-    yPos += 0.01;
 
     vertex(width, height);
-    vertex(0, height);
-
+    vertex(0,     height);
     endShape(CLOSE);
 
+    noiseOffset += 0.003;
+}
+
+function spawnEntities() {
+    if (trashImages.length > 0 && frameCount % trashFrame === 0) {
+        trash.push(new Trash());
+    }
+    if (random(1) < bubbleSpawn) {
+        fishBubbles.push(new Bubble());
+    }
+}
+
+function updateAndDrawTrash() {
     for (let i = trash.length - 1; i >= 0; i--) {
-
         let t = trash[i];
-
-        if (!t) continue;
-
         t.update();
         t.display();
 
-        if (t.x < -100 || t.x > width + 100) {
-            trash.splice(i,1);
+        if (t.x < -100 || t.x > width + 100 || t.alpha <= 0) {
+            trash.splice(i, 1);
         }
-
     }
+}
 
-    // move fish toward mouse
-    fishX = lerp(fishX, mouseX, 0.01);
-    fishY = lerp(fishY, mouseY, 0.01);
+function updateAndDrawFish() {
+    // Smoothly follow the mouse
+    fishX = lerp(fishX, mouseX, fishLerp);
+    fishY = lerp(fishY, mouseY, fishLerp);
 
-    // keep fish under the wave
+    // Keep the fish below the water surface
     let waveY = getWaveHeight(fishX);
+    if (fishY < waveY + 20) fishY = waveY + 20;
 
-    if (fishY < waveY + 20) {
-        fishY = waveY + 20;
-    }
-
-    // calculate angle to mouse
     let angle = atan2(mouseY - fishY, mouseX - fishX);
 
     push();
     translate(fishX, fishY);
     rotate(angle);
-
     drawFish();
-
     pop();
+}
 
+function updateAndDrawBubbles() {
     for (let i = fishBubbles.length - 1; i >= 0; i--) {
+        let b = fishBubbles[i];
+        b.update();
+        b.display();
 
-        fishBubbles[i].update();
-        fishBubbles[i].display();
-
-        let waveY = getWaveHeight(fishBubbles[i].x);
-
-        // remove bubble when it reaches water surface
-        if (fishBubbles[i].y < waveY) {
+        if (b.y < getWaveHeight(b.x)) {
             fishBubbles.splice(i, 1);
         }
     }
-
-            
-        if (seabinX > width + 60) {
-            seabinX = -50;
-        }
-
-        // get wave height at seabin position
-        let seabinY = getWaveHeight(seabinX) + sin(frameCount * 0.05) * 3;
-
-        // draw seabin floating
-        push();
-        imageMode(CENTER);
-        translate(seabinX, seabinY - 10); // slightly above the wave
-        image(seabinImg, 0, 0, 120, 120);
-        pop();
 }
 
-function mousePressed() {
+function updateAndDrawSeabin() {
+    // Wrap seabin across screen
+    if (seabinX > width + 60) seabinX = -50;
 
-    if (gameState === "menu") {
-        menuMousePressed();
-    }
-    else if (gameState === "instructions") {
-        gameState = "menu";  // go back to menu
-    }
+    let seabinY = getWaveHeight(seabinX) + sin(frameCount * 0.05) * 3;
 
+    push();
+    imageMode(CENTER);
+    image(seabinImg, seabinX, seabinY - 0, 120, 120);
+    pop();
 }
+
 
 function drawFish() {
+    fill(backgroundColour);
+    stroke(255);
 
-  fill('#f6f5f5ff')
-  stroke(255);
+    ellipse(10,  0,  70, 28);   // body
+    ellipse(35,  0,  28, 20);   // head
 
-  // body
-  ellipse(10, 0, 70, 28);
+    triangle(-20, 0,  -35, -8,  -35, 8);   // tail base
+    triangle(-35, -8, -55, -18, -45, -2);  // upper fork
+    triangle(-35,  8, -55,  18, -45,  2);  // lower fork
 
-  // head
-  ellipse(35, 0, 28, 20);
-
-  // tail base
-  triangle(-20, 0, -35, -8, -35, 8);
-
-  // forked tail
-  triangle(-35, -8, -55, -18, -45, -2);
-  triangle(-35, 8, -55, 18, -45, 2);
-
-  // top fin
-  triangle(5, -14, 18, -30, 28, -12);
-
-  // bottom fin
-  triangle(5, 14, 18, 30, 28, 12);
+    triangle(5, -14, 18, -30, 28, -12);    // top fin
+    triangle(5,  14, 18,  30, 28,  12);    // bottom fin
 }
 
-// keeps canvas full screen if window resizes
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+
+function mousePressed() {
+    if      (gameState === 'menu')         menuMousePressed();
+    else if (gameState === 'instructions') gameState = 'menu';
 }
+
 
 function getWaveHeight(x) {
-
     x = constrain(x, 0, width);
-
-    let xPos = map(x, 0, width, 0, width * 0.05);
-
-    let y = map(noise(xPos, yPos), 1, 10, height * 0.15, height * 0.6);
-
-    return y;
+    let nx = map(x, 0, width, 0, width * 0.05);
+    return map(noise(nx, noiseOffset), 1, 10, height * waveTop, height * waveBot);
 }
+
 
 class Trash {
 
     constructor() {
-
-        this.img = random(trashImages);
-
-        if (!this.img) {
-            this.img = trashImages[0];
-        }
-
+        this.img = random(trashImages) ?? trashImages[0];
         this.size = random(40, 80);
-
-        this.side = random(["left","right"]);
-
-        if (this.side === "left") {
-            this.x = -50;
-            this.speed = random(0.5, 1.5);
-        } else {
-            this.x = width + 50;
-            this.speed = -random(0.5, 1.5);
-        }
-
-        this.y = random(height * 0.3, height * 0.8);
-
+        this.alpha = 255;
         this.wobbleOffset = random(1000);
-
         this.angle = random(TWO_PI);
-        this.rotationSpeed = random(-0.01,0.01);
+        this.rotationSpeed = random(-0.01, 0.01);
+        this.collected = false;
+
+        let fromLeft = random() < 0.5;
+        this.x = fromLeft ? -50 : width + 50;
+        this.speed = fromLeft ? random(0.5, 1.5) : -random(0.5, 1.5);
+        this.y = random(height * 0.3, height * 0.8);
     }
 
     update() {
-
-        this.x += this.speed;   
-
-        this.x = constrain(this.x, -100, width + 100);
-
+        this.x += this.speed;
         this.y += sin(frameCount * 0.05 + this.wobbleOffset) * 0.5;
-
         this.angle += this.rotationSpeed;
 
+        let d = dist(this.x, this.y, fishX, fishY);
+        if (d < this.size / 2 + 40) this.collected = true;
+
+        if (this.collected) {
+            this.alpha -= 8;
+            this.size  *= 0.97;
+        }
     }
 
     display() {
+        push();
+        translate(this.x, this.y);
+        rotate(this.angle);
+        imageMode(CENTER);
+        tint(255, this.alpha);
+        image(this.img, 0, 0, this.size, this.size);
+        pop();
+    }
+}
+
+    function drawArrow() {
 
         push();
 
-        translate(this.x, this.y);
-        rotate(this.angle);
+        imageMode(CORNER);
+        tint('#76aaceff');
+        image(arrowImg, 20, 20, 40, 40);
 
-        imageMode(CENTER);
-        image(this.img, 0, 0, this.size, this.size);
+        noTint();
+        fill('#76aaceff');
+        noStroke();
+        textSize(18);
+        textAlign(LEFT, CENTER);
+
+        text("Press ESC to go back to the menu", 70, 40);
 
         pop();
     }
 
-}
+    function keyPressed() {
+
+        if (keyCode === ESCAPE && gameState !== 'menu') {
+            gameState = 'menu';
+            return false; // prevents browser default ESC behaviour
+        }
+
+    }
