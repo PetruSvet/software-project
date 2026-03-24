@@ -26,13 +26,22 @@ let seabinFact = "";
 let showFact = false;
 let factTimer = 0;
 let seabinCooldown = 0;
+let factCooldown = 0;
 
 let seabinFacts = [
-    "Seabins can collect up to 1.5kg of trash per day.",
-    "Seabins capture microplastics and oil.",
-    "A seabin works like an underwater vacuum cleaner.",
-    "Seabins help keep marinas and harbours clean.",
-    "A Seabin continuously filters floating debris from water."
+    "Seabins can collect up to 1.5kg of trash per day, including plastics, microplastics, oils, and detergents floating on the water's surface.",
+    "Seabins capture microplastics as small as 2mm and can also absorb oils and pollutants using special filtration bags.",
+    "A seabin works like an underwater vacuum cleaner — water is sucked in from the surface and pumped through a catch bag that traps floating debris.",
+    "Seabins help keep marinas and harbours clean by running 24 hours a day, 7 days a week, quietly filtering the water around them.",
+    "A Seabin continuously filters floating debris from water, and a single unit can collect up to 90,000 plastic bags over the course of a year."
+];
+
+let pollutionFacts = [
+    "Over 8 million tons of plastic enter the ocean each year — that's the equivalent of dumping a garbage truck full of plastic into the sea every single minute.",
+    "Plastic can take hundreds of years to decompose. A plastic bottle may persist in the ocean for up to 450 years, breaking into smaller and smaller fragments over time.",
+    "Sea animals often mistake plastic for food. Sea turtles, for example, frequently swallow plastic bags thinking they are jellyfish, which can be fatal.",
+    "Microplastics have been found in marine life worldwide, from deep-sea fish to Arctic sea ice, and have even been detected in the seafood humans eat.",
+    "Most ocean pollution comes from land-based sources such as rivers, runoff, and littering — meaning the choices we make on land directly impact ocean health."
 ];
 
 
@@ -84,9 +93,8 @@ function drawSimulation() {
     updateAndDrawBubbles();
     updateAndDrawSeabin();
     drawSpeechBubble();
-    if (seabinCooldown > 0) {
-        seabinCooldown--;
-    }
+    if (seabinCooldown > 0) seabinCooldown--;
+    if (factCooldown > 0)   factCooldown--;
 }
 
 function drawWave() {
@@ -232,11 +240,22 @@ class Trash {
         this.angle += this.rotationSpeed;
 
         let d = dist(this.x, this.y, fishX, fishY);
-        if (d < this.size / 2 + 40) this.collected = true;
+
+        if (d < this.size / 2 + 40 && !this.collected) {
+            this.collected = true;
+
+            // trigger fact popup
+            if (factCooldown <= 0) {
+                seabinFact = random(pollutionFacts);
+                showFact = true;
+                factTimer = 240;
+                factCooldown = 120;
+            }
+        }
 
         if (this.collected) {
             this.alpha -= 8;
-            this.size  *= 0.97;
+            this.size *= 0.97;
         }
     }
 
@@ -279,41 +298,27 @@ class Trash {
 
     }
 
-    function drawSpeechBubble() {
+function drawSpeechBubble() {
+    if (!showFact) return;
 
-        if (!showFact) return;
+    push();
 
-        push();
+    let waveY = getWaveHeight(width / 2);
+    let textX = width / 2;
+    let textY = waveY - 80;
 
-        let bubbleX = fishX + 60;
-        let bubbleY = fishY - 60;
+    noStroke();
+    fill('#76aaceff');
+    textSize(20);
+    textAlign(CENTER, BOTTOM);
+    textWrap(WORD);
+    textFont("Averia Sans Libre");
+    text(seabinFact, textX - 150, textY + 30, 300);
 
-        // bubble
-        fill(255);
-        stroke('#76aaceff');
-        strokeWeight(2);
-        rect(bubbleX, bubbleY, 260, 90, 30);
+    pop();
 
-        // bubble tail
-        triangle(
-            fishX + 20, fishY - 10,
-            fishX + 40, fishY - 20,
-            bubbleX, bubbleY + 30
-        );
-
-        // text
-        noStroke();
-        fill('#76aaceff');
-        textSize(18);
-        textAlign(LEFT, TOP);
-        textWrap(WORD);
-        textFont("Averia Sans Libre");
-        text(seabinFact, bubbleX + 10, bubbleY - 20, 240);
-
-        pop();
-
-        factTimer--;
-        if (factTimer <= 0) {
-            showFact = false;
-        }
-    }   
+    factTimer--;
+    if (factTimer <= 0) {
+        showFact = false;
+    }
+}   
