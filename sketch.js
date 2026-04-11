@@ -28,6 +28,9 @@ let factTimer = 0;
 let seabinCooldown = 0;
 let factCooldown = 0;
 
+let debugMode = false;
+let trashCollected = 0;
+
 let seabinFacts = [
     "Seabins can collect up to 1.5kg of trash per day, including plastics, microplastics, oils, and detergents floating on the water's surface.",
     "Seabins capture microplastics as small as 2mm and can also absorb oils and pollutants using special filtration bags.",
@@ -50,6 +53,7 @@ function preload() {
     trashImages = files.map(name => loadImage(`images/${name}.png`));
     seabinImg = loadImage('images/seabin.png');
     arrowImg = loadImage('images/arrow.png');
+    instructionsImg = loadImage('images/instructions.png');
 }
 
 function setup() {
@@ -95,6 +99,9 @@ function drawSimulation() {
     drawSpeechBubble();
     if (seabinCooldown > 0) seabinCooldown--;
     if (factCooldown > 0)   factCooldown--;
+    if (debugMode) {
+    drawDebug();
+}
 }
 
 function drawWave() {
@@ -243,6 +250,7 @@ class Trash {
 
         if (d < this.size / 2 + 40 && !this.collected) {
             this.collected = true;
+            trashCollected++;
 
             // trigger fact popup
             if (factCooldown <= 0) {
@@ -279,7 +287,7 @@ class Trash {
         image(arrowImg, 20, 20, 40, 40);
 
         noTint();
-        fill('#76aaceff');
+        fill('#76aace');
         noStroke();
         textSize(18);
         textAlign(LEFT, CENTER);
@@ -290,6 +298,10 @@ class Trash {
     }
 
     function keyPressed() {
+
+            if (key === 't' || key === 'T') {
+                debugMode = !debugMode;
+            }
 
         if (keyCode === ESCAPE && gameState !== 'menu') {
             gameState = 'menu';
@@ -321,4 +333,23 @@ function drawSpeechBubble() {
     if (factTimer <= 0) {
         showFact = false;
     }
-}   
+}
+    function drawDebug() {
+
+        let panelWidth = 250;
+        let padding = 5;
+
+        let x = width - panelWidth - padding; // 
+        let y = padding;
+
+        fill('#76aaceff');
+        textSize(14);
+        textAlign(LEFT, TOP);
+
+        text("DEBUG MODE", x + 10, y + 10);
+        text("FPS: " + int(frameRate()), x + 10, y + 30);
+        text("Fish X: " + int(fishX), x + 10, y + 50);
+        text("Fish Y: " + int(fishY), x + 10, y + 70);
+        text("Trash count: " + trash.length, x + 10, y + 90);
+        text("Collected: " + trashCollected, x + 10, y + 110);
+    }
